@@ -18,15 +18,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, AlertTriangle, TrendingUp, Target } from "lucide-react";
+import { Plus, AlertTriangle, TrendingUp, Target, Edit2, Trash2 } from "lucide-react";
+import WhatsAppIntegration from "@/components/WhatsAppIntegration";
 import { useState } from "react";
 import { toast } from "sonner";
 
 export default function Budgets() {
   const [open, setOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [selectedBudget, setSelectedBudget] = useState<any>(null);
 
-  // Mock data - will be replaced with real data from API
-  const budgets = [
+  const [budgets, setBudgets] = useState([
     {
       id: 1,
       category: "Food & Groceries",
@@ -59,7 +61,7 @@ export default function Budgets() {
       period: "monthly",
       alertThreshold: 80,
     },
-  ];
+  ]);
 
   const categories = [
     "Food & Groceries",
@@ -76,6 +78,23 @@ export default function Budgets() {
     e.preventDefault();
     toast.success("Budget created successfully");
     setOpen(false);
+  };
+
+  const handleEditBudget = (budget: any) => {
+    setSelectedBudget(budget);
+    setEditOpen(true);
+  };
+
+  const handleSaveEdit = (e: React.FormEvent) => {
+    e.preventDefault();
+    toast.success("Budget updated successfully");
+    setEditOpen(false);
+    setSelectedBudget(null);
+  };
+
+  const handleDeleteBudget = (id: number) => {
+    setBudgets(budgets.filter((b) => b.id !== id));
+    toast.success("Budget deleted successfully");
   };
 
   const getStatusColor = (spent: number, limit: number) => {
@@ -157,7 +176,8 @@ export default function Budgets() {
         </div>
 
         {/* Add Budget Button */}
-        <div className="flex justify-end">
+        <div className="flex justify-end gap-2">
+          <WhatsAppIntegration />
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
               <Button>
@@ -224,6 +244,78 @@ export default function Budgets() {
           </Dialog>
         </div>
 
+        {/* Edit Budget Dialog */}
+        <Dialog open={editOpen} onOpenChange={setEditOpen}>
+          <DialogContent className="sm:max-w-[500px]">
+            <DialogHeader>
+              <DialogTitle>Edit Budget</DialogTitle>
+              <DialogDescription>Update budget details</DialogDescription>
+            </DialogHeader>
+            {selectedBudget && (
+              <form onSubmit={handleSaveEdit} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-category">Category</Label>
+                  <Input
+                    id="edit-category"
+                    value={selectedBudget.category}
+                    disabled
+                    className="bg-muted"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-limit">Budget Limit</Label>
+                    <Input
+                      id="edit-limit"
+                      type="number"
+                      defaultValue={selectedBudget.limit}
+                      step="0.01"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-period">Period</Label>
+                    <Select defaultValue={selectedBudget.period}>
+                      <SelectTrigger id="edit-period">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="daily">Daily</SelectItem>
+                        <SelectItem value="weekly">Weekly</SelectItem>
+                        <SelectItem value="monthly">Monthly</SelectItem>
+                        <SelectItem value="yearly">Yearly</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="edit-threshold">Alert Threshold (%)</Label>
+                  <Input
+                    id="edit-threshold"
+                    type="number"
+                    defaultValue={selectedBudget.alertThreshold}
+                    min="0"
+                    max="100"
+                  />
+                </div>
+
+                <div className="flex gap-2 justify-end">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setEditOpen(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button type="submit">Save Changes</Button>
+                </div>
+              </form>
+            )}
+          </DialogContent>
+        </Dialog>
+
         {/* Budgets List */}
         <div className="grid grid-cols-1 gap-6">
           {budgets.map((budget) => {
@@ -244,11 +336,29 @@ export default function Budgets() {
                         <CardDescription>{budget.period.charAt(0).toUpperCase() + budget.period.slice(1)} budget</CardDescription>
                       </div>
                     </div>
-                    {isOverBudget && (
-                      <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-lg">
-                        <AlertTriangle className="h-5 w-5 text-red-600 dark:text-red-400" />
-                      </div>
-                    )}
+                    <div className="flex items-center gap-2">
+                      {isOverBudget && (
+                        <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-lg">
+                          <AlertTriangle className="h-5 w-5 text-red-600 dark:text-red-400" />
+                        </div>
+                      )}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleEditBudget(budget)}
+                        className="text-blue-600 hover:text-blue-700 dark:text-blue-400"
+                      >
+                        <Edit2 className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDeleteBudget(budget.id)}
+                        className="text-red-600 hover:text-red-700 dark:text-red-400"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -291,16 +401,6 @@ export default function Budgets() {
                     >
                       ${Math.abs(budget.limit - budget.spent).toLocaleString()}
                     </span>
-                  </div>
-
-                  {/* Action Buttons */}
-                  <div className="flex gap-2">
-                    <Button variant="outline" size="sm" className="flex-1">
-                      Edit
-                    </Button>
-                    <Button variant="outline" size="sm" className="flex-1">
-                      Delete
-                    </Button>
                   </div>
                 </CardContent>
               </Card>

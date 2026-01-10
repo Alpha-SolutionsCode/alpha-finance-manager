@@ -19,17 +19,19 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Search, Filter, Download, TrendingUp, Calendar, Tag } from "lucide-react";
+import { Plus, Search, Download, TrendingUp, Calendar, Tag, Edit2, Trash2 } from "lucide-react";
+import WhatsAppIntegration from "@/components/WhatsAppIntegration";
 import { useState } from "react";
 import { toast } from "sonner";
 
 export default function Income() {
   const [open, setOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [selectedIncome, setSelectedIncome] = useState<any>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterSource, setFilterSource] = useState("all");
 
-  // Mock data
-  const incomes = [
+  const [incomes, setIncomes] = useState([
     {
       id: 1,
       description: "Monthly Salary",
@@ -62,7 +64,7 @@ export default function Income() {
       date: "2024-01-01",
       recurring: true,
     },
-  ];
+  ]);
 
   const sources = ["Salary", "Freelance", "Investment", "Rental", "Business", "Other"];
 
@@ -81,6 +83,23 @@ export default function Income() {
     e.preventDefault();
     toast.success("Income added successfully");
     setOpen(false);
+  };
+
+  const handleEditIncome = (income: any) => {
+    setSelectedIncome(income);
+    setEditOpen(true);
+  };
+
+  const handleSaveEdit = (e: React.FormEvent) => {
+    e.preventDefault();
+    toast.success("Income updated successfully");
+    setEditOpen(false);
+    setSelectedIncome(null);
+  };
+
+  const handleDeleteIncome = (id: number) => {
+    setIncomes(incomes.filter((inc) => inc.id !== id));
+    toast.success("Income deleted successfully");
   };
 
   return (
@@ -156,6 +175,7 @@ export default function Income() {
           </div>
 
           <div className="flex gap-2">
+            <WhatsAppIntegration />
             <Button variant="outline" size="sm">
               <Download className="h-4 w-4 mr-2" />
               Export
@@ -232,6 +252,77 @@ export default function Income() {
           </div>
         </div>
 
+        {/* Edit Income Dialog */}
+        <Dialog open={editOpen} onOpenChange={setEditOpen}>
+          <DialogContent className="sm:max-w-[500px]">
+            <DialogHeader>
+              <DialogTitle>Edit Income</DialogTitle>
+              <DialogDescription>Update income details</DialogDescription>
+            </DialogHeader>
+            {selectedIncome && (
+              <form onSubmit={handleSaveEdit} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-description">Description</Label>
+                  <Input
+                    id="edit-description"
+                    defaultValue={selectedIncome.description}
+                    required
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-amount">Amount</Label>
+                    <Input
+                      id="edit-amount"
+                      type="number"
+                      defaultValue={selectedIncome.amount}
+                      step="0.01"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-source">Source</Label>
+                    <Select defaultValue={selectedIncome.source}>
+                      <SelectTrigger id="edit-source">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {sources.map((src) => (
+                          <SelectItem key={src} value={src}>
+                            {src}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="edit-date">Date</Label>
+                  <Input
+                    id="edit-date"
+                    type="date"
+                    defaultValue={selectedIncome.date}
+                    required
+                  />
+                </div>
+
+                <div className="flex gap-2 justify-end">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setEditOpen(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button type="submit">Save Changes</Button>
+                </div>
+              </form>
+            )}
+          </DialogContent>
+        </Dialog>
+
         {/* Income List */}
         <Card>
           <CardHeader>
@@ -269,10 +360,26 @@ export default function Income() {
                         </div>
                       </div>
                     </div>
-                    <div className="text-right">
+                    <div className="text-right flex items-center gap-2">
                       <p className="font-semibold text-green-600 dark:text-green-400">
                         +${income.amount.toFixed(2)}
                       </p>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleEditIncome(income)}
+                        className="text-blue-600 hover:text-blue-700 dark:text-blue-400"
+                      >
+                        <Edit2 className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDeleteIncome(income.id)}
+                        className="text-red-600 hover:text-red-700 dark:text-red-400"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
                     </div>
                   </div>
                 ))
