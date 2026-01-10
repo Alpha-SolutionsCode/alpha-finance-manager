@@ -1,5 +1,17 @@
 # Alpha Finance Manager - Project TODO
 
+## CRITICAL FIXES NEEDED
+- [x] Switch to dark theme by default
+- [x] Fix DashboardLayout navigation and Page 2 routing
+- [x] Make Add Expense button fully functional with API integration
+- [x] Make Add Income button fully functional with API integration
+- [x] Fix navigation links in sidebar to work properly
+- [x] Implement Income tracking page
+- [x] Implement Bills & Reminders page
+- [x] Implement Reports & Analytics page
+- [x] Implement AI Advisor chatbot
+- [x] Connect all forms to tRPC API procedures
+
 ## Phase 1: Project Planning & Setup
 - [x] Initialize project with web-db-user scaffold
 - [x] Set up database schema and migrations

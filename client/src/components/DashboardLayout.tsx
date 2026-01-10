@@ -21,15 +21,24 @@ import {
 } from "@/components/ui/sidebar";
 import { getLoginUrl } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
-import { LayoutDashboard, LogOut, PanelLeft, Users } from "lucide-react";
+import { LayoutDashboard, LogOut, PanelLeft } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
 import { Button } from "./ui/button";
 
+import { BarChart3, Zap, Target, FileText, MessageSquare, CheckSquare, FileCheck, DollarSign } from "lucide-react";
+
 const menuItems = [
-  { icon: LayoutDashboard, label: "Page 1", path: "/" },
-  { icon: Users, label: "Page 2", path: "/some-path" },
+  { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard" },
+  { icon: DollarSign, label: "Expenses", path: "/expenses" },
+  { icon: BarChart3, label: "Income", path: "/income" },
+  { icon: Zap, label: "Budgets", path: "/budgets" },
+  { icon: Target, label: "Savings Goals", path: "/goals" },
+  { icon: FileCheck, label: "Bills & Reminders", path: "/bills" },
+  { icon: CheckSquare, label: "Tasks", path: "/tasks" },
+  { icon: FileText, label: "Reports", path: "/reports" },
+  { icon: MessageSquare, label: "AI Advisor", path: "/advisor" },
 ];
 
 const SIDEBAR_WIDTH_KEY = "sidebar-width";
