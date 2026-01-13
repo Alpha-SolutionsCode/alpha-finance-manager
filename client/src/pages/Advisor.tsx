@@ -2,234 +2,251 @@ import DashboardLayout from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Send, Sparkles, TrendingUp, Lightbulb, AlertCircle } from "lucide-react";
-import { useState, useRef, useEffect } from "react";
-import { Streamdown } from "streamdown";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Send, Loader2, TrendingUp, PieChart, Target, AlertCircle } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 
 interface Message {
   id: string;
-  role: "user" | "assistant";
+  type: "user" | "advisor";
   content: string;
   timestamp: Date;
 }
+
+const suggestedQuestions = [
+  "How can I reduce my expenses?",
+  "What's my savings rate?",
+  "Should I increase my budget for groceries?",
+  "How am I doing financially this month?",
+  "What are my spending patterns?",
+  "Can you forecast my savings?",
+];
 
 export default function Advisor() {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "1",
-      role: "assistant",
-      content:
-        "👋 Hello! I'm your AI Financial Advisor. I can help you with:\n\n• **Spending Analysis** - Understand your spending patterns\n• **Savings Optimization** - Get tips to save more\n• **Budget Planning** - Create smart budgets\n• **Financial Forecasting** - Predict future trends\n• **Investment Advice** - General investment insights\n\nWhat would you like to know about your finances?",
+      type: "advisor",
+      content: "Hello! I'm your AI Financial Advisor. I can help you analyze your spending, optimize your budget, and provide personalized financial insights. What would you like to know?",
       timestamp: new Date(),
     },
   ]);
   const [input, setInput] = useState("");
-  const [loading, setLoading] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
+  const [isLoading, setIsLoading] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    scrollToBottom();
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
   }, [messages]);
 
-  const handleSendMessage = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!input.trim()) return;
+  const handleSendMessage = async (text?: string) => {
+    const messageText = text || input.trim();
+    if (!messageText) return;
 
     // Add user message
     const userMessage: Message = {
       id: Date.now().toString(),
-      role: "user",
-      content: input,
+      type: "user",
+      content: messageText,
       timestamp: new Date(),
     };
 
     setMessages((prev) => [...prev, userMessage]);
     setInput("");
-    setLoading(true);
+    setIsLoading(true);
 
-    // Simulate AI response
+    // Simulate AI response with a delay
     setTimeout(() => {
-      const responses: { [key: string]: string } = {
-        spending:
-          "Based on your recent transactions, I notice you're spending about **$2,840/month**. Here's the breakdown:\n\n- **Food & Groceries**: 42% ($1,193)\n- **Transportation**: 21% ($596)\n- **Entertainment**: 14% ($398)\n- **Utilities**: 11% ($312)\n- **Other**: 12% ($341)\n\n**Recommendation**: Your grocery spending is slightly high. Consider meal planning to reduce costs by 10-15%.",
-        savings:
-          "Great news! You're saving **45% of your income** ($2,360/month). Here are ways to optimize further:\n\n1. **Automate transfers** - Set up automatic transfers to savings on payday\n2. **Reduce subscriptions** - Review and cancel unused services (potential $50-100/month)\n3. **Optimize groceries** - Use coupons and buy generic brands (save $100-150/month)\n4. **Negotiate bills** - Call your providers for better rates (save $50-100/month)\n\nWith these changes, you could save an extra **$200-350/month**!",
-        budget:
-          "I recommend this monthly budget based on your income of $5,200:\n\n- **Needs** (50%): $2,600\n  - Housing, utilities, groceries, transportation\n- **Wants** (30%): $1,560\n  - Entertainment, dining, subscriptions\n- **Savings** (20%): $1,040\n  - Emergency fund, investments, goals\n\nYou're currently at 45% savings, which is excellent! Keep it up.",
-        forecast:
-          "Based on current trends, here's my forecast for the next 6 months:\n\n📈 **Income**: Stable at $5,200/month\n📉 **Expenses**: Slight increase to $2,950/month (seasonal)\n💰 **Savings**: Average $2,250/month\n\n**6-Month Projection**:\n- Total savings: $13,500\n- Emergency fund: Will reach $15,000 goal ✅\n- Discretionary spending room: $300/month\n\nYou're on track to achieve your goals!",
-        investment:
-          "Here are some general investment insights:\n\n🎯 **For Beginners**:\n- Start with index funds (S&P 500)\n- Contribute regularly (dollar-cost averaging)\n- Diversify across asset classes\n\n💡 **Your Situation**:\n- Emergency fund: ✅ Almost complete\n- Next step: Start investing 10-15% of savings\n- Recommended allocation: 70% stocks, 30% bonds\n\n⚠️ **Disclaimer**: This is general advice. Consult a financial advisor for personalized recommendations.",
+      const advisorResponses: { [key: string]: string } = {
+        "reduce expenses": "Based on your spending patterns, I recommend:\n\n• Cut dining out by 30% (save ~$150/month)\n• Review subscriptions (potential $45/month savings)\n• Use public transport 2x weekly (save ~$80/month)\n\nTotal potential savings: $275/month",
+        "savings rate": "Your current savings rate is 38% of your income.\n\n• Monthly Income: $5,200\n• Monthly Expenses: $2,840\n• Monthly Savings: $2,360\n\nThis is excellent! You're saving well above the recommended 20%.",
+        "grocery budget": "Your current grocery spending is $425.50/month on a $600 budget.\n\nYou're at 71% of your budget, which is healthy. I recommend:\n• Meal planning to reduce impulse purchases\n• Using grocery apps for discounts\n• Buying store brands (save ~$30-50/month)",
+        "doing financially": "Here's your financial summary:\n\n✓ Total Balance: $24,582.50\n✓ Monthly Income: $5,200\n✓ Monthly Expenses: $2,840\n✓ Savings Rate: 38%\n✓ Budget Status: 3 categories at risk\n\nOverall: You're in great financial health!",
+        "spending patterns": "Your top spending categories:\n\n1. Food & Groceries: $425.50 (15%)\n2. Utilities: $189.97 (7%)\n3. Transportation: $245 (9%)\n4. Entertainment: $180 (6%)\n5. Other: $1,200 (43%)\n\nConsider reviewing the 'Other' category for optimization opportunities.",
+        "forecast savings": "Based on your current trajectory:\n\n• Next 3 months: +$7,080\n• Next 6 months: +$14,160\n• Next 12 months: +$28,320\n\nAt this rate, you'll reach your $15,000 emergency fund goal in 6.4 months!",
       };
 
-      let response = responses["default"] ||
-        "I understand. Could you be more specific? Ask me about:\n- Your spending patterns\n- Ways to save more\n- Budget planning\n- Financial forecasting\n- Investment advice";
+      let response = "I can help you with that! Some areas I can assist with:\n\n• Expense optimization\n• Savings forecasting\n• Budget recommendations\n• Spending pattern analysis\n• Financial health assessment\n\nWhat would you like to explore?";
 
-      const lowerInput = input.toLowerCase();
-      if (lowerInput.includes("spend") || lowerInput.includes("expense")) {
-        response = responses.spending;
-      } else if (lowerInput.includes("save") || lowerInput.includes("saving")) {
-        response = responses.savings;
-      } else if (lowerInput.includes("budget")) {
-        response = responses.budget;
-      } else if (lowerInput.includes("forecast") || lowerInput.includes("predict")) {
-        response = responses.forecast;
-      } else if (lowerInput.includes("invest")) {
-        response = responses.investment;
+      const lowerInput = messageText.toLowerCase();
+      for (const [key, value] of Object.entries(advisorResponses)) {
+        if (lowerInput.includes(key)) {
+          response = value;
+          break;
+        }
       }
 
-      const assistantMessage: Message = {
+      const advisorMessage: Message = {
         id: (Date.now() + 1).toString(),
-        role: "assistant",
+        type: "advisor",
         content: response,
         timestamp: new Date(),
       };
 
-      setMessages((prev) => [...prev, assistantMessage]);
-      setLoading(false);
+      setMessages((prev) => [...prev, advisorMessage]);
+      setIsLoading(false);
     }, 1000);
   };
 
-  const suggestedQuestions = [
-    "Analyze my spending patterns",
-    "How can I save more?",
-    "Create a budget for me",
-    "Forecast my finances",
-    "Investment recommendations",
-  ];
-
   return (
     <DashboardLayout>
-      <div className="space-y-6 h-[calc(100vh-120px)] flex flex-col">
-        {/* Header */}
-        <div className="flex flex-col gap-2">
-          <div className="flex items-center gap-2">
-            <Sparkles className="h-6 w-6 text-blue-600 dark:text-blue-400" />
-            <h1 className="text-3xl font-bold">AI Financial Advisor</h1>
-          </div>
-          <p className="text-muted-foreground">Get personalized financial insights and recommendations</p>
+      <div className="space-y-4 h-[calc(100vh-120px)] flex flex-col">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">AI Financial Advisor</h1>
+          <p className="text-muted-foreground mt-2">Get personalized financial insights and recommendations</p>
         </div>
 
-        {/* Chat Area */}
-        <div className="flex-1 overflow-hidden flex flex-col bg-secondary/30 rounded-lg border">
-          {/* Messages */}
-          <div className="flex-1 overflow-y-auto p-6 space-y-4">
-            {messages.map((message) => (
-              <div
-                key={message.id}
-                className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
-              >
-                <div
-                  className={`max-w-md lg:max-w-2xl px-4 py-3 rounded-lg ${
-                    message.role === "user"
-                      ? "bg-blue-600 text-white rounded-br-none"
-                      : "bg-background border border-border rounded-bl-none"
-                  }`}
-                >
-                  {message.role === "assistant" ? (
-                    <Streamdown>{message.content}</Streamdown>
-                  ) : (
-                    <p>{message.content}</p>
-                  )}
-                  <p className={`text-xs mt-2 ${message.role === "user" ? "text-blue-100" : "text-muted-foreground"}`}>
-                    {message.timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                  </p>
-                </div>
+        <div className="flex-1 grid grid-cols-1 lg:grid-cols-4 gap-4 min-h-0">
+          {/* Chat Area */}
+          <div className="lg:col-span-3 flex flex-col bg-card border rounded-lg overflow-hidden">
+            {/* Messages */}
+            <ScrollArea className="flex-1" ref={scrollRef}>
+              <div className="p-4 space-y-4">
+                {messages.map((message) => (
+                  <div
+                    key={message.id}
+                    className={`flex ${
+                      message.type === "user" ? "justify-end" : "justify-start"
+                    }`}
+                  >
+                    <div
+                      className={`max-w-xs lg:max-w-md px-4 py-3 rounded-lg ${
+                        message.type === "user"
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-muted text-muted-foreground"
+                      }`}
+                    >
+                      <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                      <p className="text-xs mt-2 opacity-70">
+                        {message.timestamp.toLocaleTimeString([], {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+                {isLoading && (
+                  <div className="flex justify-start">
+                    <div className="bg-muted text-muted-foreground px-4 py-3 rounded-lg">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    </div>
+                  </div>
+                )}
               </div>
-            ))}
-            {loading && (
-              <div className="flex justify-start">
-                <div className="bg-background border border-border px-4 py-3 rounded-lg rounded-bl-none">
-                  <div className="flex gap-2">
-                    <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" />
-                    <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: "0.1s" }} />
-                    <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: "0.2s" }} />
+            </ScrollArea>
+
+            {/* Input Area */}
+            <div className="border-t p-4 space-y-3">
+              {/* Suggested Questions */}
+              {messages.length <= 1 && (
+                <div className="space-y-2">
+                  <p className="text-xs text-muted-foreground">Suggested questions:</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {suggestedQuestions.slice(0, 4).map((question, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => handleSendMessage(question)}
+                        className="text-xs text-left p-2 rounded border border-border hover:bg-accent transition-colors"
+                      >
+                        {question}
+                      </button>
+                    ))}
                   </div>
                 </div>
+              )}
+
+              {/* Message Input */}
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Ask me anything about your finances..."
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyPress={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault();
+                      handleSendMessage();
+                    }
+                  }}
+                  disabled={isLoading}
+                  className="flex-1"
+                />
+                <Button
+                  onClick={() => handleSendMessage()}
+                  disabled={isLoading || !input.trim()}
+                  size="icon"
+                >
+                  {isLoading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Send className="h-4 w-4" />
+                  )}
+                </Button>
               </div>
-            )}
-            <div ref={messagesEndRef} />
+            </div>
           </div>
 
-          {/* Suggested Questions */}
-          {messages.length === 1 && (
-            <div className="px-6 py-4 border-t border-border">
-              <p className="text-sm text-muted-foreground mb-3">Try asking:</p>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                {suggestedQuestions.map((question, index) => (
-                  <button
-                    key={index}
-                    onClick={() => {
-                      setInput(question);
-                    }}
-                    className="text-left p-3 rounded-lg bg-background border border-border hover:border-primary hover:bg-accent transition-colors text-sm"
-                  >
-                    {question}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
+          {/* Sidebar - Hidden on mobile, visible on lg */}
+          <div className="hidden lg:flex flex-col gap-4">
+            {/* Quick Insights */}
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <TrendingUp className="h-4 w-4" />
+                  Quick Insights
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="text-xs">
+                  <p className="text-muted-foreground">Savings Rate</p>
+                  <p className="font-semibold text-lg">38%</p>
+                </div>
+                <div className="text-xs">
+                  <p className="text-muted-foreground">Monthly Savings</p>
+                  <p className="font-semibold text-lg text-green-600 dark:text-green-400">
+                    +$2,360
+                  </p>
+                </div>
+                <div className="text-xs">
+                  <p className="text-muted-foreground">Budget Health</p>
+                  <p className="font-semibold text-lg text-blue-600 dark:text-blue-400">
+                    Good
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
 
-          {/* Input Area */}
-          <form onSubmit={handleSendMessage} className="border-t border-border p-4">
-            <div className="flex gap-2">
-              <Input
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                placeholder="Ask me anything about your finances..."
-                disabled={loading}
-                className="flex-1"
-              />
-              <Button type="submit" disabled={loading || !input.trim()} size="icon">
-                <Send className="h-4 w-4" />
-              </Button>
-            </div>
-          </form>
-        </div>
-
-        {/* Quick Tips */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card>
-            <CardHeader className="pb-3">
-              <div className="flex items-center gap-2">
-                <TrendingUp className="h-5 w-5 text-green-600 dark:text-green-400" />
-                <CardTitle className="text-sm">Savings Rate</CardTitle>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <p className="text-2xl font-bold">45%</p>
-              <p className="text-xs text-muted-foreground">Excellent! Keep it up.</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-3">
-              <div className="flex items-center gap-2">
-                <Lightbulb className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
-                <CardTitle className="text-sm">Quick Tip</CardTitle>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm">Reduce grocery spending by 10% to save $120/month.</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-3">
-              <div className="flex items-center gap-2">
-                <AlertCircle className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                <CardTitle className="text-sm">Next Goal</CardTitle>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm">Emergency fund: 67% complete. $5,000 to go!</p>
-            </CardContent>
-          </Card>
+            {/* Recommendations */}
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <AlertCircle className="h-4 w-4" />
+                  Recommendations
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <div className="text-xs p-2 bg-amber-50 dark:bg-amber-900/20 rounded border border-amber-200 dark:border-amber-900">
+                  <p className="font-semibold text-amber-900 dark:text-amber-100">
+                    Budget Alert
+                  </p>
+                  <p className="text-amber-800 dark:text-amber-200">
+                    Dining out at 89% of budget
+                  </p>
+                </div>
+                <div className="text-xs p-2 bg-green-50 dark:bg-green-900/20 rounded border border-green-200 dark:border-green-900">
+                  <p className="font-semibold text-green-900 dark:text-green-100">
+                    Great Job!
+                  </p>
+                  <p className="text-green-800 dark:text-green-200">
+                    Savings goal on track
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </div>
     </DashboardLayout>
